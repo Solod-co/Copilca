@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Бюджет</title>
+<style>
+*{box-sizing:border-box;font-family:sans-serif}
+body{margin:0;background:#15160A;color:#15160A;padding-bottom:30px}
+header{background:#6F5B42;color:#F5F3EE;padding:14px 10px;border-radius:0 0 16px 16px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.bal{font-size:25px;font-weight:700;margin:3px 0}
+.sub{font-size:12px;background:rgba(21,22,10,.35);display:inline-block;padding:4px 10px;border-radius:9px}
+.box{max-width:480px;margin:10px auto;padding:0 10px}
+.card{background:#BEBBB4;border-radius:11px;padding:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+h2{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(21,22,10,.12);font-size:13px}
+.row:last-child{border:none}
+input,select,button{width:100%;padding:9px;margin-bottom:6px;border-radius:7px;border:1px solid rgba(21,22,10,.25);font-size:14px;background:#F5F3EE;color:#15160A}
+button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.g{background:#2D6A4F;color:#F5F3EE}.r{background:#9B2226;color:#F5F3EE}.y{background:#B5651D;color:#F5F3EE}
+.sm{width:auto;padding:4px 9px;font-size:12px;margin:0}
+.xs{width:auto;padding:2px 7px;font-size:11px;margin:0 0 0 6px;background:#5C5852}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tab{flex:1;padding:7px;text-align:center;background:rgba(21,22,10,.12);color:#15160A;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer}
+.tab.act{background:#3A4F41;color:#F5F3EE}
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;text-align:center;margin-bottom:6px}
+.pb{background:#E8E4D9;padding:6px 2px;border-radius:7px;border:1px solid rgba(21,22,10,.15)}
+.pb b{display:block;font-size:13px;color:#15160A}
+.pb span{font-size:10px;color:#5C5346;font-weight:600}
+.bb{background:rgba(21,22,10,.18);height:7px;border-radius:4px;overflow:hidden;margin:5px 0}
+.bar{height:100%;background:#2D6A4F;width:0;transition:width .3s}
+.hid{display:none}
+.mut{font-size:12px;color:#3D3B35}
+.sub-box{background:rgba(21,22,10,.08);padding:8px;border-radius:8px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<header>
+  <div>Капитал + Копилка</div>
+  <div class="bal" id="tot">0.00 BYN</div>
+  <div class="sub" id="subTot">Карты: 0.00 BYN | Копилка: 0.00 $</div>
+</header>
+<div class="box">
+  <div class="card">
+    <h2>🐷 Копилка <button type="button" class="sm y" id="bPig">+ / -</button></h2>
+    <div class="pg">
+      <div class="pb"><b id="pBYN">0.00</b><span>BYN</span></div>
+      <div class="pb"><b id="pUSD">0.00</b><span>USD</span></div>
+      <div class="pb"><b id="pEUR">0.00</b><span>EUR</span></div>
+    </div>
+    <div id="fPig" class="hid sub-box">
+      <select id="pAct"><option value="add">Положить</option><option value="sub">Забрать</option></select>
+      <select id="pCard"></select>
+      <select id="pCurr"><option value="BYN">В копилку: BYN</option><option value="USD">В копилку: USD</option><option value="EUR">В копилку: EUR</option></select>
+      <input id="pAmt" type="number" step="0.01" placeholder="Сумма">
+      <button type="button" class="y" id="bSaveP">Применить</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>💳 Карты <div style="display:flex;gap:5px"><button type="button" class="sm y" id="bTrf">⇄ Перевод</button><button type="button" class="sm" id="bAddC">+ Карта</button></div></h2>
+    <div id="fCard" class="hid sub-box">
+      <input id="cName" placeholder="Название карты">
+      <select id="cCurr"><option>BYN</option><option>USD</option><option>EUR</option><option>RUB</option></select>
+      <input id="cBal" type="number" step="0.01" placeholder="Баланс">
+      <button type="button" id="bSaveC">Сохранить</button>
+    </div>
+    <div id="fTrf" class="hid sub-box">
+      <select id="trFrom"></select>
+      <select id="trTo"></select>
+      <input id="trAmt" type="number" step="0.01" placeholder="Сумма списания">
+      <button type="button" class="y" id="bDoTrf">Перевести</button>
+    </div>
+    <div id="fEditC" class="hid sub-box">
+      <input type="hidden" id="eOldName">
+      <input id="eNewName" placeholder="Новое название">
+      <input id="eNewBal" type="number" step="0.01" placeholder="Новый баланс">
+      <div style="display:flex;gap:6px">
+        <button type="button" class="g" id="bSaveEC">Обновить</button>
+        <button type="button" class="r" id="bDelEC">Удалить</button>
+        <button type="button" style="background:#5C5852" id="bCanEC">Отмена</button>
+      </div>
+    </div>
+    <div id="lCards"></div>
+  </div>
+  <div class="card">
+    <div class="tabs"><div class="tab act" id="tExp">- Расход</div><div class="tab" id="tInc">+ ЗП / Доход</div></div>
+    <select id="txC"></select>
+    <input id="txAmt" type="number" step="0.01" placeholder="Сумма">
+    <select id="txCat">
+      <option>🛒 Продукты</option>
+      <option>🐱 Патисон (котик)</option>
+      <option>⛽ Бензин</option>
+      <option>🚕 Такси</option>
+      <option>🛍️ Wildberries</option>
+      <option>🍺 Пиво</option>
+      <option>🍽️ Рестораны</option>
+      <option>💡 Коммуналка</option>
+      <option>💊 Здоровье</option>
+      <option>🎁 Подарки</option>
+      <option>🚌 Транспорт</option>
+      <option>🏠 Жилье</option>
+      <option>🎉 Отдых</option>
+      <option>👕 Одежда</option>
+      <option>📦 Прочее</option>
+    </select>
+    <input id="txSrc" class="hid" placeholder="Источник (Зарплата)">
+    <button type="button" id="bTx" class="r">Записать расход</button>
+  </div>
+  <div class="card">
+    <h2 id="hSav">📊 Экономия</h2>
+    <div id="savTxt" class="mut">Нет данных</div>
+    <div class="bb"><div class="bar" id="savBar"></div></div>
+    <div id="savAdv" style="font-size:12px;font-weight:600"></div>
+  </div>
+  <div class="card">
+    <h2><span id="hLim">🎯 Лимит на месяц</span> <button type="button" class="sm" id="bLim">Лимит</button></h2>
+    <div id="fLim" class="hid sub-box">
+      <input id="inLim" type="number" step="1" placeholder="Сумма лимита в BYN">
+      <button type="button" id="bSaveL">Сохранить лимит</button>
+    </div>
+    <div id="limTxt" class="mut">Нажмите «Лимит», чтобы задать бюджет</div>
+    <div class="bb"><div class="bar" id="limBar"></div></div>
+    <div id="limRes" style="font-size:12px;font-weight:600"></div>
+  </div>
+  <div class="card">
+    <h2 id="hCats">📉 Расходы (BYN)</h2>
+    <div id="lCats" class="mut">Пусто</div>
+  </div>
+  <div class="card">
+    <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" id="bNbrb">🔄 НБРБ</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
+    <div id="rTxt" class="mut"></div>
+    <div id="fRate" class="hid sub-box" style="margin-top:6px">
+      <input id="rUSD" type="number" step="0.0001">
+      <input id="rEUR" type="number" step="0.0001">
+      <input id="rRUB" type="number" step="0.00001">
+      <button type="button" id="bSaveR">Ок</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🕒 История <div style="display:flex;gap:5px"><button type="button" class="sm y" id="bUndo">Отмена</button><button type="button" class="sm" style="background:#5C5852" id="bClr">Сброс</button></div></h2>
+    <div id="lTx"></div>
+  </div>
+</div>
+<script>
+var mode="exp",d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};
+function getPeriod(){
+  var n=new Date(),y=n.getFullYear(),m=n.getMonth(),day=n.getDate();
+  if(day<=10){m--;if(m<0){m=11;y--;}}
+  var nm=(m+1)%12;
+  var names=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+  return {id:y+"-"+String(m+1).padStart(2,"0"),label:"10 "+names[m]+" – 10 "+names[nm]};
+}
+function curDate(){var n=new Date();return String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0");}
+try{var s=localStorage.getItem("bApp6");if(s){d=JSON.parse(s);if(!d.lim)d.lim=0;var pid=getPeriod().id;d.tx.forEach(function(t){if(!t.ym)t.ym=pid;});}}catch(e){}
+function save(){try{localStorage.setItem("bApp6",JSON.stringify(d));}catch(e){}render();}
+function $(i){return document.getElementById(i);}
+function fetchNbrb(silent){
+  var btn=$("bNbrb");btn.textContent="⏳...";
+  Promise.all([
+    fetch("https://nbrb.by").then(function(r){return r.json();}),
+    fetch("https://nbrb.by").then(function(r){return r.json();}),
+    fetch("https://nbrb.by").then(function(r){return r.json();})
+  ]).then(function(res){
+    d.rates.USD=res[0].Cur_OfficialRate;
+    d.rates.EUR=res[1].Cur_OfficialRate;
+    d.rates.RUB=+(res[2].Cur_OfficialRate/res[2].Cur_Scale).toFixed(5);
+    btn.textContent="🔄 НБРБ";
+    save();
+    if(!silent)alert("Курсы НБРБ обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
+  }).catch(function(){
+    btn.textContent="🔄 НБРБ";
+    if(!silent)alert("Не удалось загрузить курсы (проверьте интернет)");
+  });
+}
+$("bNbrb").onclick=function(){fetchNbrb(false);};
+function addRow(parent,left,right,col,bold,editKey){
+  var r=document.createElement("div");r.className="row";
+  var s1=document.createElement("span");s1.textContent=left;if(bold)s1.style.fontWeight="bold";
+  var rWrap=document.createElement("span");rWrap.style.display="flex";rWrap.style.alignItems="center";
+  var s2=document.createElement("b");s2.textContent=right;if(col)s2.style.color=col;s2.style.whiteSpace="nowrap";
+  rWrap.appendChild(s2);
+  if(editKey){
+    var eb=document.createElement("button");eb.type="button";eb.className="xs";eb.textContent="✎";
+    eb.onclick=function(){openEdit(editKey);};
+    rWrap.appendChild(eb);
+  }
+  r.appendChild(s1);r.appendChild(rWrap);parent.appendChild(r);
+}
+function addOpt(sel,val,txt){
+  var o=document.createElement("option");o.value=val;o.textContent=txt;sel.appendChild(o);
+}
+function openEdit(k){
+  $("fCard").classList.add("hid");$("fTrf").classList.add("hid");
+  $("eOldName").value=k;$("eNewName").value=k;$("eNewBal").value=d.cards[k].b.toFixed(2);
+  $("fEditC").classList.remove("hid");
+}
+$("bCanEC").onclick=function(){$("fEditC").classList.add("hid");};
+$("bSaveEC").onclick=function(){
+  var oldN=$("eOldName").value,newN=$("eNewName").value.trim(),newB=parseFloat($("eNewBal").value);
+  if(!newN)return alert("Введите название");
+  if(isNaN(newB))return alert("Введите баланс");
+  if(newN!==oldN&&d.cards[newN])return alert("Карта с таким именем уже есть");
+  var curr=d.cards[oldN].c;
+  delete d.cards[oldN];
+  d.cards[newN]={b:newB,c:curr};
+  $("fEditC").classList.add("hid");save();
+};
+$("bDelEC").onclick=function(){
+  var oldN=$("eOldName").value;
+  if(confirm("Удалить карту «"+oldN+"»?")){delete d.cards[oldN];$("fEditC").classList.add("hid");save();}
+};
+$("bPig").onclick=function(){$("fPig").classList.toggle("hid");};
+$("bAddC").onclick=function(){$("fTrf").classList.add("hid");$("fEditC").classList.add("hid");$("fCard").classList.toggle("hid");};
+$("bTrf").onclick=function(){$("fCard").classList.add("hid");$("fEditC").classList.add("hid");$("fTrf").classList.toggle("hid");};
+$("bRate").onclick=function(){$("fRate").classList.toggle("hid");};
+$("bLim").onclick=function(){$("fLim").classList.toggle("hid");$("inLim").value=d.lim||"";};
+$("bSaveL").onclick=function(){d.lim=parseFloat($("inLim").value)||0;$("fLim").classList.add("hid");save();};
+$("bDoTrf").onclick=function(){
+  var f=$("trFrom").value,t=$("trTo").value,a=parseFloat($("trAmt").value);
+  if(!f||!t||f===t)return alert("Выберите две разные карты");
+  if(!a||a<=0)return alert("Введите сумму");
+  var cf=d.cards[f],ct=d.cards[t];
+  var got=(a*d.rates[cf.c])/d.rates[ct.c];
+  cf.b-=a;ct.b+=got;
+  var lbl="Перевод: "+f+" → "+t+(cf.c!==ct.c?" (+"+got.toFixed(2)+" "+ct.c+")":"");
+  d.tx.unshift({m:"trf",c:f,tc:t,a:a,ga:got,u:cf.c,cat:lbl,ym:getPeriod().id,dt:curDate()});
+  $("trAmt").value="";$("fTrf").classList.add("hid");save();
+};
+$("bSaveP").onclick=function(){
+  var a=$("pAct").value,u=$("pCurr").value,m=parseFloat($("pAmt").value),c=$("pCard").value;
+  if(!m||m<=0)return alert("Сумма?");
+  if(a==="sub"&&d.pig[u]<m)return alert("Мало средств");
+  var l="Наличные",ac=0;
+  if(c!=="NONE"&&d.cards[c]){
+    var o=d.cards[c];
+    ac=(m*d.rates[u])/d.rates[o.c];
+    if(a==="add"){o.b-=ac;l="с "+c+": -"+ac.toFixed(2)+" "+o.c;}
+    else{o.b+=ac;l="на "+c+": +"+ac.toFixed(2)+" "+o.c;}
+  }
+  d.pig[u]+=(a==="add"?m:-m);
+  d.tx.unshift({m:a==="add"?"inc":"exp",c:"Копилка",a:m,u:u,cat:(a==="add"?"В копилку ":"Из копилки ")+"("+l+")",pa:a,pc:c,pca:ac,ym:getPeriod().id,dt:curDate()});
+  $("pAmt").value="";$("fPig").classList.add("hid");save();
+};
+$("tExp").onclick=function(){mode="exp";$("tExp").classList.add("act");$("tInc").classList.remove("act");$("txCat").classList.remove("hid");$("txSrc").classList.add("hid");$("bTx").innerText="Записать расход";$("bTx").className="r";};
+$("tInc").onclick=function(){mode="inc";$("tInc").classList.add("act");$("tExp").classList.remove("act");$("txCat").classList.add("hid");$("txSrc").classList.remove("hid");$("bTx").innerText="Зачислить доход";$("bTx").className="g";};
+$("bSaveC").onclick=function(){var n=$("cName").value.trim();if(!n)return alert("Имя?");d.cards[n]={b:parseFloat($("cBal").value)||0,c:$("cCurr").value};$("cName").value="";$("cBal").value="";$("fCard").classList.add("hid");save();};
+$("bTx").onclick=function(){var c=$("txC").value,a=parseFloat($("txAmt").value);if(!c)return alert("Добавьте карту");if(!a||a<=0)return alert("Сумма?");var cat=mode==="exp"?$("txCat").value:($("txSrc").value.trim()||"Зарплата");d.cards[c].b+=(mode==="exp"?-a:a);d.tx.unshift({m:mode,c:c,a:a,u:d.cards[c].c,cat:cat,ym:getPeriod().id,dt:curDate()});$("txAmt").value="";$("txSrc").value="";save();};
+$("bUndo").onclick=function(){
+  if(!d.tx.length)return alert("Пусто");
+  var t=d.tx.shift();
+  if(t.m==="trf"){
+    if(d.cards[t.c])d.cards[t.c].b+=t.a;
+    if(d.cards[t.tc])d.cards[t.tc].b-=t.ga;
+  }else if(t.c==="Копилка"){
+    d.pig[t.u]-=(t.pa==="add"?t.a:-t.a);
+    if(t.pc&&t.pc!=="NONE"&&d.cards[t.pc])d.cards[t.pc].b+=(t.pa==="add"?t.pca:-t.pca);
+  }else if(d.cards[t.c])d.cards[t.c].b-=(t.m==="exp"?-t.a:t.a);
+  save();
+};
+$("bSaveR").onclick=function(){d.rates.USD=parseFloat($("rUSD").value)||d.rates.USD;d.rates.EUR=parseFloat($("rEUR").value)||d.rates.EUR;d.rates.RUB=parseFloat($("rRUB").value)||d.rates.RUB;$("fRate").classList.add("hid");save();};
+$("bClr").onclick=function(){if(confirm("Сбросить?")){d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};save();}};
+function render(){
+  var per=getPeriod(),ym=per.id,lbl=per.label;
+  $("hSav").textContent="📊 Экономия ("+lbl+")";
+  $("hLim").textContent="🎯 Лимит ("+lbl+")";
+  $("hCats").textContent="📉 Расходы ("+lbl+")";
+  $("pBYN").textContent=d.pig.BYN.toFixed(2);$("pUSD").textContent=d.pig.USD.toFixed(2);$("pEUR").textContent=d.pig.EUR.toFixed(2);
+  var pB=d.pig.BYN+(d.pig.USD*d.rates.USD)+(d.pig.EUR*d.rates.EUR),cB=0,lc=$("lCards"),tc=$("txC"),pc=$("pCard"),tf=$("trFrom"),tt=$("trTo");
+  lc.textContent="";tc.textContent="";pc.textContent="";tf.textContent="";tt.textContent="";
+  addOpt(pc,"NONE","Наличные");
+  Object.keys(d.cards).forEach(function(k){
+    var x=d.cards[k],b=x.b*d.rates[x.c];cB+=b;
+    addRow(lc,k,x.b.toFixed(2)+" "+x.c+" (~"+b.toFixed(1)+" BYN)",null,true,k);
+    var txt=k+" ("+x.c+")";
+    addOpt(tc,k,txt);addOpt(pc,k,txt);addOpt(tf,k,"Откуда: "+txt);addOpt(tt,k,"Куда: "+txt);
+  });
+  if(tf.options.length>1)tt.selectedIndex=1;
+  if(!lc.children.length)lc.textContent="Нажмите «+ Карта»";
+  $("tot").textContent=(cB+pB).toFixed(2)+" BYN";
+  $("subTot").textContent="Карты: "+cB.toFixed(2)+" BYN | Копилка: "+(pB/d.rates.USD).toFixed(2)+" $";
+  var inc=0,exp=0,cats={};
+  d.tx.forEach(function(t){
+    if(t.c==="Копилка"||t.m==="trf"||(t.ym&&t.ym!==ym))return;
+    var v=t.a*d.rates[t.u];
+    if(t.m==="inc")inc+=v;else{exp+=v;cats[t.cat]=(cats[t.cat]||0)+v;}
+  });
+  if(inc>0){
+    var sv=inc-exp,rt=Math.max(0,(sv/inc)*100);
+    $("savTxt").textContent="Доход: "+inc.toFixed(1)+" | Расход: "+exp.toFixed(1)+" | Остаток: "+sv.toFixed(1);
+    $("savBar").style.width=Math.min(100,rt)+"%";
+    $("savAdv").textContent=sv>0?"Сохранено: "+((sv/inc)*100).toFixed(1)+"%":"Минус!";
+  }else{$("savTxt").textContent="Нет данных ("+lbl+")";$("savBar").style.width="0%";$("savAdv").textContent="";}
+  if(d.lim>0){
+    var pct=(exp/d.lim)*100,diff=d.lim-exp;
+    $("limTxt").textContent="Лимит: "+d.lim.toFixed(2)+" BYN | Потрачено: "+exp.toFixed(2)+" BYN";
+    $("limBar").style.width=Math.min(100,pct)+"%";
+    if(diff>=0){
+      $("limBar").style.background=pct>=80?"#B5651D":"#2D6A4F";
+      $("limRes").style.color=pct>=80?"#9A4E0F":"#1B4332";
+      $("limRes").textContent="Осталось от лимита: "+diff.toFixed(2)+" BYN ("+(100-pct).toFixed(0)+"%)";
+    }else{
+      $("limBar").style.background="#9B2226";
+      $("limRes").style.color="#9B2226";
+      $("limRes").textContent="⚠️ Перерасход: "+Math.abs(diff).toFixed(2)+" BYN";
+    }
+  }else{$("limTxt").textContent="Нажмите «Лимит», чтобы задать бюджет";$("limBar").style.width="0%";$("limRes").textContent="";}
+  var lcat=$("lCats");lcat.textContent="";
+  Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).forEach(function(k){
+    addRow(lcat,k,cats[k].toFixed(2)+" BYN ("+((cats[k]/exp)*100).toFixed(0)+"%)");
+  });
+  if(!lcat.children.length)lcat.textContent="Пусто";
+  $("rTxt").textContent="USD: "+d.rates.USD+" | EUR: "+d.rates.EUR+" | RUB: "+d.rates.RUB;
+  $("rUSD").value=d.rates.USD;$("rEUR").value=d.rates.EUR;$("rRUB").value=d.rates.RUB;
+  var ltx=$("lTx");ltx.textContent="";
+  d.tx.slice(0,15).forEach(function(t){
+    var cl=t.m==="exp"?"#9B2226":"#1B4332",sg=t.m==="exp"?"-":"+";
+    if(t.m==="trf"){cl="#3A4F41";sg="⇄ ";}
+    var dt=t.dt?"["+t.dt+"] ":"";
+    var tail=(t.c==="Копилка"||t.m==="trf")?"":" ("+t.c+")";
+    addRow(ltx,dt+t.cat+tail,sg+t.a.toFixed(2)+" "+t.u,cl);
+  });
+}
+render();
+fetchNbrb(true);
+</script>
+</body>
+</html>
