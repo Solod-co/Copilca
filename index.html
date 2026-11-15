@@ -124,23 +124,26 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
   </div>
   <div class="card">
     <h2 id="hCats">📉 Расходы (BYN)</h2>
-    <div id="lCats" class="mut">Пусто</div>
-  </div>
-  <div class="card">
-    <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" id="bNbrb">🔄 НБРБ</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
-    <div id="rTxt" class="mut"></div>
-    <div id="fRate" class="hid sub-box" style="margin-top:6px">
-      <input id="rUSD" type="number" step="0.0001">
-      <input id="rEUR" type="number" step="0.0001">
-      <input id="rRUB" type="number" step="0.00001">
-      <button type="button" id="bSaveR">Ок</button>
-    </div>
-  </div>
-  <div class="card">
-    <h2>🕒 История <div style="display:flex;gap:5px"><button type="button" class="sm y" id="bUndo">Отмена</button><button type="button" class="sm" style="background:#5C5852" id="bClr">Сброс</button></div></h2>
-    <div id="lTx"></div>
-  </div>
-</div>
+    function fetchNbrb(silent){
+  var btn=$("bNbrb");btn.textContent="⏳...";
+  Promise.all([
+    fetch("https://nbrb.by").then(function(r){return r.json();}),
+    fetch("https://nbrb.by").then(function(r){return r.json();}),
+    fetch("https://nbrb.by").then(function(r){return r.json();})
+  ]).then(function(res){
+    var u=res.shift(),e=res.shift(),r=res.shift();
+    d.rates.USD=u.Cur_OfficialRate;
+    d.rates.EUR=e.Cur_OfficialRate;
+    d.rates.RUB=+(r.Cur_OfficialRate/r.Cur_Scale).toFixed(5);
+    btn.textContent="🔄 НБРБ";
+    save();
+    if(!silent)alert("Курсы НБРБ обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
+  }).catch(function(){
+    btn.textContent="🔄 НБРБ";
+    if(!silent)alert("Не удалось загрузить курсы (проверьте интернет)");
+  });
+}
+
 <script>
 var mode="exp",d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};
 function getPeriod(){
