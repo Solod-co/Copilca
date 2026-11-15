@@ -156,21 +156,34 @@ function save(){try{localStorage.setItem("bApp6",JSON.stringify(d));}catch(e){}r
 function $(i){return document.getElementById(i);}
 function fetchNbrb(silent){
   var btn=$("bNbrb");btn.textContent="⏳...";
-  fetch("https://er-api.com")
+  function apply(rt){
+    var byn=rt.BYN||rt.byn;
+    var eur=rt.EUR||rt.eur;
+    var rub=rt.RUB||rt.rub;
+    if(!byn||!eur||!rub)throw 1;
+    d.rates.USD=+byn.toFixed(4);
+    d.rates.EUR=+(byn/eur).toFixed(4);
+    d.rates.RUB=+(byn/rub).toFixed(5);
+    btn.textContent="🔄 Курс";
+    save();
+    if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
+  }
+  fetch("https://jsdelivr.net")
     .then(function(r){if(!r.ok)throw 1;return r.json();})
-    .then(function(data){
-      var rt=data.rates;
-      var byn=rt.BYN;
-      d.rates.USD=+byn.toFixed(4);
-      d.rates.EUR=+(byn/rt.EUR).toFixed(4);
-      d.rates.RUB=+(byn/rt.RUB).toFixed(5);
-      btn.textContent="🔄 Курс";
-      save();
-      if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
+    .then(function(j){apply(j.usd);})
+    .catch(function(){
+      return fetch("https://pages.dev")
+        .then(function(r){if(!r.ok)throw 1;return r.json();})
+        .then(function(j){apply(j.usd);});
+    })
+    .catch(function(){
+      return fetch("https://er-api.com")
+        .then(function(r){if(!r.ok)throw 1;return r.json();})
+        .then(function(j){apply(j.rates);});
     })
     .catch(function(){
       btn.textContent="🔄 Курс";
-      if(!silent)alert("Не удалось загрузить курсы. Введите вручную через «Изм.»");
+      if(!silent)alert("Не удалось загрузить курсы. Проверьте сеть или введите вручную через «Изм.»");
     });
 }
 $("bNbrb").onclick=function(){fetchNbrb(false);};
