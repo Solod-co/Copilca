@@ -156,11 +156,20 @@ function save(){try{localStorage.setItem("bApp6",JSON.stringify(d));}catch(e){}r
 function $(i){return document.getElementById(i);}
 function fetchNbrb(silent){
   var btn=$("bNbrb");btn.textContent="⏳...";
-  Promise.all([
-    fetch("https://nbrb.by").then(function(r){return r.json();}),
-    fetch("https://nbrb.by").then(function(r){return r.json();}),
-    fetch("https://nbrb.by").then(function(r){return r.json();})
-  ]).then(function(res){
+  var urls=[
+    "https://nbrb.by",
+    "https://nbrb.by",
+    "https://nbrb.by"
+  ];
+  function getViaProxy(u){
+    return fetch("https://corsproxy.io?"+encodeURIComponent(u))
+      .then(function(r){if(!r.ok)throw 1;return r.json();})
+      .catch(function(){
+        return fetch("https://allorigins.win"+encodeURIComponent(u))
+          .then(function(r){if(!r.ok)throw 1;return r.json();});
+      });
+  }
+  Promise.all(urls.map(getViaProxy)).then(function(res){
     var u=res.shift(),e=res.shift(),r=res.shift();
     d.rates.USD=u.Cur_OfficialRate;
     d.rates.EUR=e.Cur_OfficialRate;
@@ -170,7 +179,7 @@ function fetchNbrb(silent){
     if(!silent)alert("Курсы НБРБ обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
   }).catch(function(){
     btn.textContent="🔄 НБРБ";
-    if(!silent)alert("Не удалось загрузить курсы (проверьте интернет)");
+    if(!silent)alert("Сервер курсов временно недоступен. Введите вручную через «Изм.»");
   });
 }
 $("bNbrb").onclick=function(){fetchNbrb(false);};
