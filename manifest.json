@@ -1,0 +1,15 @@
+{
+  "name": "Мой Бюджет",
+  "short_name": "Бюджет",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#15160A",
+  "theme_color": "#6F5B42",
+  "icons": [
+    {
+      "src": "https://flaticon.com",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
