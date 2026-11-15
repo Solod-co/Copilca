@@ -127,7 +127,7 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
     <div id="lCats" class="mut">Пусто</div>
   </div>
   <div class="card">
-    <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" id="bNbrb">🔄 НБРБ</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
+    <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" id="bNbrb">🔄 Курс</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
     <div id="rTxt" class="mut"></div>
     <div id="fRate" class="hid sub-box" style="margin-top:6px">
       <input id="rUSD" type="number" step="0.0001">
@@ -156,31 +156,22 @@ function save(){try{localStorage.setItem("bApp6",JSON.stringify(d));}catch(e){}r
 function $(i){return document.getElementById(i);}
 function fetchNbrb(silent){
   var btn=$("bNbrb");btn.textContent="⏳...";
-  var urls=[
-    "https://nbrb.by",
-    "https://nbrb.by",
-    "https://nbrb.by"
-  ];
-  function getViaProxy(u){
-    return fetch("https://corsproxy.io?"+encodeURIComponent(u))
-      .then(function(r){if(!r.ok)throw 1;return r.json();})
-      .catch(function(){
-        return fetch("https://allorigins.win"+encodeURIComponent(u))
-          .then(function(r){if(!r.ok)throw 1;return r.json();});
-      });
-  }
-  Promise.all(urls.map(getViaProxy)).then(function(res){
-    var u=res.shift(),e=res.shift(),r=res.shift();
-    d.rates.USD=u.Cur_OfficialRate;
-    d.rates.EUR=e.Cur_OfficialRate;
-    d.rates.RUB=+(r.Cur_OfficialRate/r.Cur_Scale).toFixed(5);
-    btn.textContent="🔄 НБРБ";
-    save();
-    if(!silent)alert("Курсы НБРБ обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
-  }).catch(function(){
-    btn.textContent="🔄 НБРБ";
-    if(!silent)alert("Сервер курсов временно недоступен. Введите вручную через «Изм.»");
-  });
+  fetch("https://er-api.com")
+    .then(function(r){if(!r.ok)throw 1;return r.json();})
+    .then(function(data){
+      var rt=data.rates;
+      var byn=rt.BYN;
+      d.rates.USD=+byn.toFixed(4);
+      d.rates.EUR=+(byn/rt.EUR).toFixed(4);
+      d.rates.RUB=+(byn/rt.RUB).toFixed(5);
+      btn.textContent="🔄 Курс";
+      save();
+      if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
+    })
+    .catch(function(){
+      btn.textContent="🔄 Курс";
+      if(!silent)alert("Не удалось загрузить курсы. Введите вручную через «Изм.»");
+    });
 }
 $("bNbrb").onclick=function(){fetchNbrb(false);};
 function addRow(parent,left,right,col,bold,editKey){
