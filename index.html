@@ -11,6 +11,7 @@ body{margin:0;background:#15160A;color:#15160A;padding-bottom:30px}
 header{background:#6F5B42;color:#F5F3EE;padding:14px 10px;border-radius:0 0 16px 16px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.4)}
 .bal{font-size:25px;font-weight:700;margin:3px 0}
 .sub{font-size:12px;background:rgba(21,22,10,.35);display:inline-block;padding:4px 10px;border-radius:9px}
+.sync{font-size:11px;margin-top:5px;opacity:.9;cursor:pointer}
 .box{max-width:480px;margin:10px auto;padding:0 10px}
 .card{background:#BEBBB4;border-radius:11px;padding:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 h2{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
@@ -40,6 +41,7 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
   <div>Капитал + Копилка</div>
   <div class="bal" id="tot">0.00 BYN</div>
   <div class="sub" id="subTot">Карты: 0.00 BYN | Копилка: 0.00 $</div>
+  <div class="sync" id="syncSt" title="Нажмите, чтобы сменить секретное слово">⏳ Подключение...</div>
 </header>
 <div class="box">
   <div class="card">
@@ -143,7 +145,16 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
   </div>
 </div>
 <script>
-var mode="exp",d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};
+var DB_URL="https://family-budget-bb5e7-default-rtdb.firebaseio.com";
+var room=localStorage.getItem("bRoom")||"";
+function askRoom(force){
+  if(!room||force){
+    var r=prompt("Введите секретное слово для синхронизации бюджета (одинаковое на обоих телефонах):",room||"patison2026");
+    if(r&&r.trim()){room=r.trim().replace(/[^a-zA-Z0-9_-]/g,"_");localStorage.setItem("bRoom",room);lastJson="";pullCloud();}
+  }
+}
+askRoom(false);
+var mode="exp",d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0},lastJson="";
 function getPeriod(){
   var n=new Date(),y=n.getFullYear(),m=n.getMonth(),day=n.getDate();
   if(day<=10){m--;if(m<0){m=11;y--;}}
@@ -153,14 +164,44 @@ function getPeriod(){
 }
 function curDate(){var n=new Date();return String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0");}
 try{var s=localStorage.getItem("bApp6");if(s){d=JSON.parse(s);if(!d.lim)d.lim=0;var pid=getPeriod().id;d.tx.forEach(function(t){if(!t.ym)t.ym=pid;});}}catch(e){}
-function save(){try{localStorage.setItem("bApp6",JSON.stringify(d));}catch(e){}render();}
 function $(i){return document.getElementById(i);}
+$("syncSt").onclick=function(){askRoom(true);};
+function save(){
+  var j=JSON.stringify(d);lastJson=j;
+  try{localStorage.setItem("bApp6",j);}catch(e){}
+  render();
+  if(room){
+    $("syncSt").textContent="⏳ Сохранение...";
+    fetch(DB_URL+"/budgets/"+room+".json",{method:"PUT",body:j})
+      .then(function(r){if(!r.ok)throw 1;$("syncSt").textContent="☁️ Синхронизировано ("+room+")";})
+      .catch(function(){$("syncSt").textContent="⚠️ Офлайн (сохранено на телефоне)";});
+  }
+}
+function pullCloud(){
+  if(!room){$("syncSt").textContent="⚠️ Нажмите, чтобы задать слово синхронизации";return;}
+  fetch(DB_URL+"/budgets/"+room+".json")
+    .then(function(r){if(!r.ok)throw 1;return r.json();})
+    .then(function(cd){
+      if(cd&&typeof cd==="object"){
+        if(!cd.cards)cd.cards={};
+        if(!cd.pig)cd.pig={BYN:0,USD:0,EUR:0};
+        if(!cd.tx)cd.tx=[];
+        if(!cd.rates)cd.rates={BYN:1,USD:3.25,EUR:3.5,RUB:0.035};
+        if(!cd.lim)cd.lim=0;
+        var j=JSON.stringify(cd);
+        if(j!==lastJson){d=cd;lastJson=j;try{localStorage.setItem("bApp6",j);}catch(e){}render();}
+      }else if(Object.keys(d.cards).length||d.tx.length){
+        save();
+      }
+      $("syncSt").textContent="☁️ Синхронизировано ("+room+")";
+    })
+    .catch(function(){$("syncSt").textContent="⚠️ Офлайн";});
+}
+setInterval(pullCloud,4000);
 function fetchNbrb(silent){
   var btn=$("bNbrb");btn.textContent="⏳...";
   function apply(rt){
-    var byn=rt.BYN||rt.byn;
-    var eur=rt.EUR||rt.eur;
-    var rub=rt.RUB||rt.rub;
+    var byn=rt.BYN||rt.byn,eur=rt.EUR||rt.eur,rub=rt.RUB||rt.rub;
     if(!byn||!eur||!rub)throw 1;
     d.rates.USD=+byn.toFixed(4);
     d.rates.EUR=+(byn/eur).toFixed(4);
@@ -170,22 +211,10 @@ function fetchNbrb(silent){
     if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
   }
   fetch("https://jsdelivr.net")
-    .then(function(r){if(!r.ok)throw 1;return r.json();})
-    .then(function(j){apply(j.usd);})
-    .catch(function(){
-      return fetch("https://pages.dev")
-        .then(function(r){if(!r.ok)throw 1;return r.json();})
-        .then(function(j){apply(j.usd);});
-    })
-    .catch(function(){
-      return fetch("https://er-api.com")
-        .then(function(r){if(!r.ok)throw 1;return r.json();})
-        .then(function(j){apply(j.rates);});
-    })
-    .catch(function(){
-      btn.textContent="🔄 Курс";
-      if(!silent)alert("Не удалось загрузить курсы. Проверьте сеть или введите вручную через «Изм.»");
-    });
+    .then(function(r){if(!r.ok)throw 1;return r.json();}).then(function(j){apply(j.usd);})
+    .catch(function(){return fetch("https://pages.dev").then(function(r){if(!r.ok)throw 1;return r.json();}).then(function(j){apply(j.usd);});})
+    .catch(function(){return fetch("https://er-api.com").then(function(r){if(!r.ok)throw 1;return r.json();}).then(function(j){apply(j.rates);});})
+    .catch(function(){btn.textContent="🔄 Курс";if(!silent)alert("Не удалось загрузить курсы. Введите вручную через «Изм.»");});
 }
 $("bNbrb").onclick=function(){fetchNbrb(false);};
 function addRow(parent,left,right,col,bold,editKey){
@@ -273,7 +302,7 @@ $("bUndo").onclick=function(){
   save();
 };
 $("bSaveR").onclick=function(){d.rates.USD=parseFloat($("rUSD").value)||d.rates.USD;d.rates.EUR=parseFloat($("rEUR").value)||d.rates.EUR;d.rates.RUB=parseFloat($("rRUB").value)||d.rates.RUB;$("fRate").classList.add("hid");save();};
-$("bClr").onclick=function(){if(confirm("Сбросить?")){d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};save();}};
+$("bClr").onclick=function(){if(confirm("Сбросить всё для обоих устройств?")){d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.25,EUR:3.5,RUB:0.035},lim:0};save();}};
 function render(){
   var per=getPeriod(),ym=per.id,lbl=per.label;
   $("hSav").textContent="📊 Экономия ("+lbl+")";
@@ -336,7 +365,7 @@ function render(){
   });
 }
 render();
-fetchNbrb(true);
+pullCloud();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 </script>
 </body>
