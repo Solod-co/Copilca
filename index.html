@@ -147,7 +147,7 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
   </div>
 </div>
 <script>
-var DB_URL="https://family-budget-bb5e7-default-rtdb.firebaseio.com";
+var DB_URL="https://firebaseio.com";
 var room=localStorage.getItem("bRoom")||"";
 function askRoom(force){
   if(!room||force){
@@ -212,13 +212,13 @@ function fetchNbrb(silent){
     save();
     if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
   }
-  fetch("https://exchangerate-api.com")
-    .then(function(r){if(!r.ok)throw 1;return r.json();})
-    .then(function(j){apply(j.rates);})
-    .catch(function(){
-      btn.textContent="🔄 Курс";
-      if(!silent)alert("Ошибка загрузки. Введите курсы вручную через кнопку «Изм.»");
-    });
+  var p1=fetch("https://er-api.com").then(function(r){return r.json();}).then(function(j){return j.rates;});
+  var p2=fetch("https://exchangerate-api.com").then(function(r){return r.json();}).then(function(j){return j.rates;});
+  var p3=fetch("https://jsdelivr.net").then(function(r){return r.json();}).then(function(j){return j.usd;});
+  Promise.any([p1,p2,p3]).then(apply).catch(function(){
+    btn.textContent="🔄 Курс";
+    if(!silent)alert("Автозагрузка заблокирована сетью/браузером. Введите курсы вручную через «Изм.»");
+  });
 }
 $("bNbrb").onclick=function(){fetchNbrb(false);};
 function addRow(parent,left,right,col,bold,editKey){
