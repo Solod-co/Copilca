@@ -132,7 +132,8 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
     <div id="lCats" class="mut">Пусто</div>
   </div>
   <div class="card">
-    <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" id="bNbrb">🔄 Курс</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
+    1. 
+	• <h2>💱 Курсы <div style="display:flex;gap:5px"><button type="button" class="sm g" onclick="('https://myfin.by/currency/minsk')">🏦 Myfin</button><button type="button" class="sm" id="bRate">Изм.</button></div></h2>
     <div id="rTxt" class="mut"></div>
     <div id="fRate" class="hid sub-box" style="margin-top:6px">
       <input id="rUSD" type="number" step="0.0001">
@@ -200,26 +201,6 @@ function pullCloud(){
     .catch(function(){$("syncSt").textContent="⚠️ Офлайн";});
 }
 setInterval(pullCloud,4000);
-function fetchNbrb(silent){
-  var btn=$("bNbrb");btn.textContent="⏳...";
-  function apply(rt){
-    var byn=rt.BYN||rt.byn,eur=rt.EUR||rt.eur,rub=rt.RUB||rt.rub;
-    if(!byn||!eur||!rub)throw 1;
-    d.rates.USD=+byn.toFixed(4);
-    d.rates.EUR=+(byn/eur).toFixed(4);
-    d.rates.RUB=+(byn/rub).toFixed(5);
-    btn.textContent="🔄 Курс";
-    save();
-    if(!silent)alert("Курсы обновлены:\nUSD: "+d.rates.USD+"\nEUR: "+d.rates.EUR+"\nRUB: "+d.rates.RUB);
-  }
-  var p1=fetch("https://er-api.com").then(function(r){return r.json();}).then(function(j){return j.rates;});
-  var p2=fetch("https://exchangerate-api.com").then(function(r){return r.json();}).then(function(j){return j.rates;});
-  var p3=fetch("https://jsdelivr.net").then(function(r){return r.json();}).then(function(j){return j.usd;});
-  Promise.any([p1,p2,p3]).then(apply).catch(function(){
-    btn.textContent="🔄 Курс";
-    if(!silent)alert("Автозагрузка заблокирована сетью/браузером. Введите курсы вручную через «Изм.»");
-  });
-}
 $("bNbrb").onclick=function(){fetchNbrb(false);};
 function addRow(parent,left,right,col,bold,editKey){
   var r=document.createElement("div");r.className="row";
