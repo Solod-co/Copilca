@@ -35,6 +35,8 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
 .hid{display:none}
 .mut{font-size:12px;color:#3D3B35}
 .sub-box{background:rgba(21,22,10,.08);padding:8px;border-radius:8px;margin-bottom:8px}
+.per-bar{display:flex;justify-content:space-between;align-items:center;background:#6F5B42;color:#F5F3EE;padding:8px 10px;border-radius:11px;margin-bottom:10px;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.per-btn{width:auto;padding:5px 12px;margin:0;background:rgba(21,22,10,.35);color:#F5F3EE;font-size:13px}
 </style>
 </head>
 <body>
@@ -101,16 +103,21 @@ button{background:#3A4F41;color:#F5F3EE;border:none;font-weight:600;cursor:point
       <option>🍽️ Рестораны</option>
       <option>💡 Коммуналка</option>
       <option>💊 Здоровье</option>
+      <option>💄 Beauty</option>
       <option>🎁 Подарки</option>
       <option>🚌 Транспорт</option>
       <option>🏠 Жилье</option>
-      <option>💄 Beauty</option>
       <option>🎉 Отдых</option>
       <option>👕 Одежда</option>
       <option>📦 Прочее</option>
     </select>
     <input id="txSrc" class="hid" placeholder="Источник (Зарплата)">
     <button type="button" id="bTx" class="r">Записать расход</button>
+  </div>
+  <div class="per-bar">
+    <button type="button" class="per-btn" id="bPrevM">◀</button>
+    <span id="curPerLbl">10 ноя – 10 дек</span>
+    <button type="button" class="per-btn" id="bNextM">▶</button>
   </div>
   <div class="card">
     <h2 id="hSav">📊 Экономия</h2>
@@ -157,19 +164,24 @@ function askRoom(force){
   }
 }
 askRoom(false);
-var mode="exp",d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.00,EUR:3.30,RUB:0.0365},lim:0},lastJson="";
-function getPeriod(){
+var mode="exp",mOffset=0,d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.00,EUR:3.30,RUB:0.0365},lim:0},lastJson="";
+function getPeriod(off){
   var n=new Date(),y=n.getFullYear(),m=n.getMonth(),day=n.getDate();
   if(day<=10){m--;if(m<0){m=11;y--;}}
+  m+=(off||0);
+  while(m<0){m+=12;y--;}
+  while(m>11){m-=12;y++;}
   var nm=(m+1)%12;
   var names=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   return {id:y+"-"+String(m+1).padStart(2,"0"),label:"10 "+names[m]+" – 10 "+names[nm]};
 }
 function curDate(){var n=new Date();return String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0");}
-try{var s=localStorage.getItem("bApp6");if(s){d=JSON.parse(s);if(!d.lim)d.lim=0;var pid=getPeriod().id;d.tx.forEach(function(t){if(!t.ym)t.ym=pid;});}}catch(e){}
+try{var s=localStorage.getItem("bApp6");if(s){d=JSON.parse(s);if(!d.lim)d.lim=0;var pid=getPeriod(0).id;d.tx.forEach(function(t){if(!t.ym)t.ym=pid;});}}catch(e){}
 function $(i){return document.getElementById(i);}
 $("syncSt").onclick=function(){askRoom(true);};
 $("bMyfin").onclick=function(){window.open("https://"+"myfin.by/currency/slonim","_blank");};
+$("bPrevM").onclick=function(){mOffset--;render();};
+$("bNextM").onclick=function(){if(mOffset<0){mOffset++;render();}};
 function save(){
   var j=JSON.stringify(d);lastJson=j;
   try{localStorage.setItem("bApp6",j);}catch(e){}
@@ -252,8 +264,8 @@ $("bDoTrf").onclick=function(){
   var got=(a*d.rates[cf.c])/d.rates[ct.c];
   cf.b-=a;ct.b+=got;
   var lbl="Перевод: "+f+" → "+t+(cf.c!==ct.c?" (+"+got.toFixed(2)+" "+ct.c+")":"");
-  d.tx.unshift({m:"trf",c:f,tc:t,a:a,ga:got,u:cf.c,cat:lbl,ym:getPeriod().id,dt:curDate()});
-  $("trAmt").value="";$("fTrf").classList.add("hid");save();
+  d.tx.unshift({m:"trf",c:f,tc:t,a:a,ga:got,u:cf.c,cat:lbl,ym:getPeriod(0).id,dt:curDate()});
+  $("trAmt").value="";$("fTrf").classList.add("hid");mOffset=0;save();
 };
 $("bSaveP").onclick=function(){
   var a=$("pAct").value,u=$("pCurr").value,m=parseFloat($("pAmt").value),c=$("pCard").value;
@@ -267,13 +279,13 @@ $("bSaveP").onclick=function(){
     else{o.b+=ac;l="на "+c+": +"+ac.toFixed(2)+" "+o.c;}
   }
   d.pig[u]+=(a==="add"?m:-m);
-  d.tx.unshift({m:a==="add"?"inc":"exp",c:"Копилка",a:m,u:u,cat:(a==="add"?"В копилку ":"Из копилки ")+"("+l+")",pa:a,pc:c,pca:ac,ym:getPeriod().id,dt:curDate()});
-  $("pAmt").value="";$("fPig").classList.add("hid");save();
+  d.tx.unshift({m:a==="add"?"inc":"exp",c:"Копилка",a:m,u:u,cat:(a==="add"?"В копилку ":"Из копилки ")+"("+l+")",pa:a,pc:c,pca:ac,ym:getPeriod(0).id,dt:curDate()});
+  $("pAmt").value="";$("fPig").classList.add("hid");mOffset=0;save();
 };
 $("tExp").onclick=function(){mode="exp";$("tExp").classList.add("act");$("tInc").classList.remove("act");$("txCat").classList.remove("hid");$("txSrc").classList.add("hid");$("bTx").innerText="Записать расход";$("bTx").className="r";};
 $("tInc").onclick=function(){mode="inc";$("tInc").classList.add("act");$("tExp").classList.remove("act");$("txCat").classList.add("hid");$("txSrc").classList.remove("hid");$("bTx").innerText="Зачислить доход";$("bTx").className="g";};
 $("bSaveC").onclick=function(){var n=$("cName").value.trim();if(!n)return alert("Имя?");d.cards[n]={b:parseFloat($("cBal").value)||0,c:$("cCurr").value};$("cName").value="";$("cBal").value="";$("fCard").classList.add("hid");save();};
-$("bTx").onclick=function(){var c=$("txC").value,a=parseFloat($("txAmt").value);if(!c)return alert("Добавьте карту");if(!a||a<=0)return alert("Сумма?");var cat=mode==="exp"?$("txCat").value:($("txSrc").value.trim()||"Зарплата");d.cards[c].b+=(mode==="exp"?-a:a);d.tx.unshift({m:mode,c:c,a:a,u:d.cards[c].c,cat:cat,ym:getPeriod().id,dt:curDate()});$("txAmt").value="";$("txSrc").value="";save();};
+$("bTx").onclick=function(){var c=$("txC").value,a=parseFloat($("txAmt").value);if(!c)return alert("Добавьте карту");if(!a||a<=0)return alert("Сумма?");var cat=mode==="exp"?$("txCat").value:($("txSrc").value.trim()||"Зарплата");d.cards[c].b+=(mode==="exp"?-a:a);d.tx.unshift({m:mode,c:c,a:a,u:d.cards[c].c,cat:cat,ym:getPeriod(0).id,dt:curDate()});$("txAmt").value="";$("txSrc").value="";mOffset=0;save();};
 $("bUndo").onclick=function(){
   if(!d.tx.length)return alert("Пусто");
   var t=d.tx.shift();
@@ -289,7 +301,9 @@ $("bUndo").onclick=function(){
 $("bSaveR").onclick=function(){d.rates.USD=parseFloat($("rUSD").value)||d.rates.USD;d.rates.EUR=parseFloat($("rEUR").value)||d.rates.EUR;d.rates.RUB=parseFloat($("rRUB").value)||d.rates.RUB;$("fRate").classList.add("hid");save();};
 $("bClr").onclick=function(){if(confirm("Сбросить всё для обоих устройств?")){d={cards:{},pig:{BYN:0,USD:0,EUR:0},tx:[],rates:{BYN:1,USD:3.00,EUR:3.30,RUB:0.0365},lim:0};save();}};
 function render(){
-  var per=getPeriod(),ym=per.id,lbl=per.label;
+  var per=getPeriod(mOffset),ym=per.id,lbl=per.label;
+  $("curPerLbl").textContent=lbl+(mOffset===0?" (текущий)":"");
+  $("bNextM").style.opacity=mOffset===0?"0.35":"1";
   $("hSav").textContent="📊 Экономия ("+lbl+")";
   $("hLim").textContent="🎯 Лимит ("+lbl+")";
   $("hCats").textContent="📉 Расходы ("+lbl+")";
@@ -343,13 +357,15 @@ function render(){
   $("rTxt").textContent="USD: "+d.rates.USD+" | EUR: "+d.rates.EUR+" | RUB: "+d.rates.RUB;
   $("rUSD").value=d.rates.USD;$("rEUR").value=d.rates.EUR;$("rRUB").value=d.rates.RUB;
   var ltx=$("lTx");ltx.textContent="";
-  d.tx.slice(0,15).forEach(function(t){
+  var filteredTx=d.tx.filter(function(t){return !t.ym||t.ym===ym;});
+  filteredTx.slice(0,30).forEach(function(t){
     var cl=t.m==="exp"?"#9B2226":"#1B4332",sg=t.m==="exp"?"-":"+";
     if(t.m==="trf"){cl="#3A4F41";sg="⇄ ";}
     var dt=t.dt?"["+t.dt+"] ":"";
     var tail=(t.c==="Копилка"||t.m==="trf")?"":" ("+t.c+")";
     addRow(ltx,dt+t.cat+tail,sg+t.a.toFixed(2)+" "+t.u,cl);
   });
+  if(!ltx.children.length)ltx.textContent="За этот период операций нет";
 }
 render();
 pullCloud();
